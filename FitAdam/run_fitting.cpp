@@ -223,7 +223,7 @@ int main(int argc, char* argv[])
             {
                 model_fitter.setFitDataNetOutput(net_output_entry);
                 model_fitter.regressor_type = 2;
-                model_fitter.fit_face_exp = true;
+                model_fitter.fit_face_exp = false;
                 model_fitter.euler = false;
                 model_fitter.wPosePr = 200.0;
                 model_fitter.wCoeffRg = 1.0;
