@@ -1,6 +1,8 @@
 # Monocular Total Capture
 Code for CVPR19 paper "Monocular Total Capture: Posing Face, Body and Hands in the Wild"
 
+Project website: [<http://domedb.perception.cs.cmu.edu/mtc.html>]
+
 # Dependencies
 This code is tested on a Ubuntu 16.04 machine with a GTX 1080Ti GPU, with the following dependencies.
 1. ffmpeg
@@ -11,12 +13,15 @@ This code is tested on a Ubuntu 16.04 machine with a GTX 1080Ti GPU, with the fo
 6. OpenGL, GLUT, GLEW
 7. libigl <https://github.com/libigl/libigl>
 8. wget
+9. OpenPose
 
 # Installation
 1. git clone this repository; suppose the main directory is ${ROOT} on your local machine.
 2. "cd ${ROOT}"
 3. "bash download.sh"
-4. Edit ${ROOT}/FitAdam/CMakeLists.txt, set line 13 to the "include" directory of libigl (this is a header only library).
+4. git clone OpenPose <https://github.com/CMU-Perceptual-Computing-Lab/openpose> and compile. Suppose the main directory of OpenPose is ${openposeDir}, such that the compiled binary is at ${openposeDir}/build/examples/openpose/openpose.bin
+5. Edit ${ROOT}/run_pipeline.sh: set line 13 to you ${openposeDir}
+4. Edit ${ROOT}/FitAdam/CMakeLists.txt: set line 13 to the "include" directory of libigl (this is a header only library)
 5. "cd ${ROOT}/FitAdam/ && mkdir build && cd build"
 6. "cmake .."
 7. "make -j12"
@@ -33,7 +38,7 @@ bash run_pipeline.sh example_dance
 ```
 or
 ```
-bash run_pipeline.sh example_speech
+bash run_pipeline.sh example_speech -f
 ```
 
 Note: Facial expression of Adam model is unavailable to copyright issue.
