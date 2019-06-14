@@ -1,0 +1,15 @@
+#version 330
+
+in vec3 vertex_pos;
+in vec3 vertex_normal;
+out vec3 normal;
+
+uniform mat4 MVP;
+uniform mat4 MV;
+
+void main()
+{
+	vec4 normal4 = MV*vec4(vertex_normal,0);
+	normal = vec3(normal4);
+	gl_Position =  MVP * vec4(vertex_pos,1);	
+} 

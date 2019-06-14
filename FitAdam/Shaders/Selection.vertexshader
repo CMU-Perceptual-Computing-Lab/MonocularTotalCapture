@@ -1,0 +1,33 @@
+#version 330
+
+in vec3 vertex_pos;
+in vec3 vertex_color;
+
+out vec3 color;
+
+uniform mat4 MVP;
+
+void main()
+{
+    gl_Position =  MVP * vec4(vertex_pos,1);	
+	color =  vertex_color;//vec4(,1);	
+}
+
+/*#version 120
+
+uniform mat4 gl_ModelViewMatrix;
+uniform mat4 gl_ProjectionMatrix;
+
+varying float zValue;
+
+void main()
+{
+	//gl_Position =  ftransform();	
+	gl_Position =  gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
+	gl_Position.y = -gl_Position.y;
+
+	gl_FrontColor = gl_Color;
+
+	zValue = gl_Position.z;		//-1 to 1
+}
+*/

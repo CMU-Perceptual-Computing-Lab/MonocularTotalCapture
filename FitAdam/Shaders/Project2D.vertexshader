@@ -1,0 +1,14 @@
+#version 330
+
+layout(location = 0) in vec3 vertex_pos;
+layout(location = 1) in vec3 coord2D_in;  // 2D coordinate of last frame
+
+out vec3 coord2D_mid;
+
+uniform mat4 MVP;
+
+void main()
+{
+	gl_Position =  MVP * vec4(vertex_pos, 1);
+	coord2D_mid = coord2D_in;
+}

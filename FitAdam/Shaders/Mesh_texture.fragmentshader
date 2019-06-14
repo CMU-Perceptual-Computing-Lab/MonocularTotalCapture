@@ -1,0 +1,15 @@
+#version 330
+
+in vec2 UV;
+
+out vec4 fragColor;
+
+// Values that stay constant for the whole mesh.
+uniform sampler2D myTextureSampler;
+
+
+void main()
+{
+	 fragColor = texture2D( myTextureSampler, UV ).rgba;
+	 //fragColor = vec4(1,0,1,1);
+}

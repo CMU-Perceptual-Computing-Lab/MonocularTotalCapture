@@ -1,0 +1,37 @@
+#version 330 core
+out vec4 color;
+ 
+in vec3 vpos;  
+in vec3 normal;  
+in vec3 objectColor;
+in float objectAlpha;
+ 
+void main()
+{
+    vec3 lightPos = vec3(0,0,0);  // set to 0 to ensure good lighting for camera mode + normal mode
+	vec3 viewPos = vec3(0,0,0);
+	vec3 lightColor = vec3(1,1,1);
+
+    // Ambient
+    float ambientStrength = 0.01f;
+    vec3 ambient = ambientStrength * lightColor;
+ 
+    // Diffuse 
+    vec3 norm = normalize(normal);
+    // norm = vec3(0, 1, 0);
+    vec3 lightDir = normalize(lightPos - vpos);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * lightColor;
+ 
+    // Specular
+    float specularStrength = 0.1f;
+    vec3 viewDir = normalize(viewPos - vpos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    vec3 specular = specularStrength * spec * lightColor;  
+ 
+    vec3 light = ambient + diffuse + specular;
+
+    vec3 result = light * objectColor;
+    color = vec4(result, objectAlpha);
+}

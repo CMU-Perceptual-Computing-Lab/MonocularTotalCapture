@@ -1,0 +1,60 @@
+#version 120
+
+// Interpolated values from the vertex shaders
+varying vec2 UV;
+varying vec4 vPro ;
+varying vec3 Position_worldspace;
+varying vec3 Normal_cameraspace;
+varying vec3 EyeDirection_cameraspace;
+varying vec3 LightDirection_cameraspace;
+varying vec3 ObjectColor;
+
+// Values that stay constant for the whole mesh.
+uniform sampler2D myTextureSampler;
+uniform mat4 MV;
+uniform vec3 LightPosition_worldspace;
+uniform float LightPower;
+
+void main(){	
+	// Distance to the light
+	float distance = length( LightPosition_worldspace - Position_worldspace );
+
+	// Normal of the computed fragment, in camera space
+	vec3 n = normalize( Normal_cameraspace );
+
+	// Direction of the light (from the fragment to the light)
+	vec3 l = normalize( LightDirection_cameraspace );
+
+	// Cosine of the angle between the normal and the light direction, clamped above 0
+	float cosTheta = clamp( dot( n,l ), 0,1 );
+	
+	// Eye vector (towards the camera)
+	vec3 E = normalize(EyeDirection_cameraspace);
+
+	// Direction in which the triangle reflects the light
+	vec3 R = reflect(-l,n);
+
+	// Cosine of the angle between the Eye vector and the Reflect vector, clamped to 0
+	//  - Looking into the reflection -> 1
+	//  - Looking elsewhere -> < 1
+	float cosAlpha = clamp( dot( E,R ), 0,1 );
+	
+	// Material properties
+	vec3 MaterialDiffuseColor = ObjectColor;
+	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
+	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
+
+	vec3 ProjectionColor = vec3(1.0, 1.0, 1.0);
+	if(vPro.w > 0.0)
+	{
+		//Map to UV coord.
+		vec2 UV2 = vec2(0.5*vPro.x/vPro.w + 0.5, 0.5*vPro.y/vPro.w + 0.5);
+		ProjectionColor = texture2D( myTextureSampler, UV2 ).rgb;
+		if( UV2.x < 0.0 || UV2.y < 0.0 || UV2.x > 1.0 || UV2.y > 1.0)
+			ProjectionColor = vec3(0.0, 0.0, 0.0);		
+	}
+
+	gl_FragColor.rgb = MaterialAmbientColor; 
+	gl_FragColor.rgb = MaterialDiffuseColor * ProjectionColor * LightPower/ (distance*distance);// * cosTheta ;
+	//gl_FragColor.rgb += MaterialDiffuseColor * ProjectionColor * LightPower * pow(cosAlpha, 5)/ (distance*distance) ;
+}

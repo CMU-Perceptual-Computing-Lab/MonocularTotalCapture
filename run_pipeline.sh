@@ -43,4 +43,17 @@ python3 POF/collect_openpose.py -n $seqName -r $dataDir/$seqName -c $numFrame
 
 # run POF generation code
 cd POF
-python3 save_total_sequence.py -s $seqName -p $dataDir/$seqName --end-index 10 $upperBody
+if [ ! -d $dataDir/$seqName/net_output/ ]; then
+	python3 save_total_sequence.py -s $seqName -p $dataDir/$seqName $upperBody
+	# python3 save_total_sequence.py -s $seqName -p $dataDir/$seqName --end-index 10 $upperBody
+else
+	echo "POF results exist. Skip POF generation."
+fi
+
+# run Adam Fitting
+cd $MTCDir/FitAdam/
+if [ ! -f ./build/run_fitting ]; then
+	echo "C++ project not correctly compiled. Please check your setting."
+fi
+./build/run_fitting --root_dirs $dataDir --seqName $seqName --start 1 --end $((numFrame + 1)) --stage 1 --imageOF
+# ./build/run_fitting --root_dirs $dataDir --seqName $seqName --start 1 --end 11 --stage 1 --imageOF

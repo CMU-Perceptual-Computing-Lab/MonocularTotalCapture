@@ -7,3 +7,5 @@ if [ ! -d snapshots ]; then
 else
     echo "Pretrained model successfully downloaded."
 fi
+cd ../FitAdam/model
+wget posefs1.perception.cs.cmu.edu/mtc/adam_blendshapes_348_delta_norm.json

@@ -1,0 +1,73 @@
+#version 120
+
+// Interpolated values from the vertex shaders
+varying vec2 UV;
+varying vec4 vPro ;
+varying vec3 Position_worldspace;
+varying vec3 Normal_cameraspace;
+varying vec3 EyeDirection_cameraspace;
+varying vec3 LightDirection1_cameraspace;
+varying vec3 LightDirection2_cameraspace;
+varying vec3 ProjectorDirection_cameraspace;
+
+// Values that stay constant for the whole mesh.
+uniform sampler2D myTextureSampler;
+uniform sampler2D myTextureSampler2;
+uniform vec3 LightPosition1_worldspace;
+uniform vec3 LightPosition2_worldspace;
+uniform vec3 ProjectorPosition_worldspace;
+uniform float LightPower;
+uniform float ProjectorPower;
+uniform mat4 MV;
+
+void main()
+{	
+	// Normal of the computed fragment, in camera space
+	vec3 n = normalize( Normal_cameraspace );
+
+	// Eye vector (towards the camera)
+	vec3 E = normalize(EyeDirection_cameraspace);
+
+	//Map to UV coord + material property
+	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb;
+	vec3 MaterialAmbientColor = vec3(0.1,0.1,0.1) * MaterialDiffuseColor;
+	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
+
+	// Light emission properties:
+	vec3 LightColor = vec3(1,1,1);	
+	float distance = length( LightPosition1_worldspace - Position_worldspace ); //distance	
+	vec3 l = normalize( LightDirection1_cameraspace ); // Direction of the light (from the fragment to the light)
+	float cosTheta = clamp( dot( n,l ), 0,1 ); // Cosine of the angle between the normal and the light direction, clamped above 0
+	vec3 R = reflect(-l,n); // Direction in which the triangle reflects the light
+	float cosAlpha = clamp( dot( E,R ), 0,1 ); 	// Cosine of the angle between the Eye vector and the Reflect vector, clamped to 0
+
+	float distance2 = length( LightPosition2_worldspace - Position_worldspace ); //distance	
+	vec3 l2 = normalize( LightDirection2_cameraspace ); // Direction of the light (from the fragment to the light)
+	float cosTheta2 = clamp( dot( n,l2 ), 0,1 ); // Cosine of the angle between the normal and the light direction, clamped above 0
+	vec3 R2 = reflect(-l2,n); // Direction in which the triangle reflects the light
+	float cosAlpha2 = clamp( dot( E,R2 ), 0,1 ); 	// Cosine of the angle between the Eye vector and the Reflect vector, clamped to 0
+
+	// Projector emission properties:
+	float distance3 = length( ProjectorPosition_worldspace - Position_worldspace ); //distance	
+	vec3 l3 = normalize( ProjectorDirection_cameraspace ); // Direction of the projector ray (from the fragment to the light)
+	float cosTheta3 = clamp( dot( n,l3 ), 0,1 ); // Cosine of the angle between the normal and the projector ray direction, clamped above 0
+	vec3 R3 = reflect(-l3,n); // Direction in which the triangle reflects the projector ray
+	float cosAlpha3 = clamp( dot( E,R3 ), 0,1 ); 	// Cosine of the angle between the Eye vector and the Reflect vector, clamped to 0
+	
+	//Projecting color
+	vec3 ProjectionColor = vec3(1.0, 1.0, 1.0);
+	if(vPro.w > 0.0)
+	{
+		vec2 UV2 = vec2(0.5*vPro.x/vPro.w + 0.5, 0.5*vPro.y/vPro.w + 0.5);
+		ProjectionColor = texture2D( myTextureSampler2, UV2 ).rgb;
+		if( UV2.x < 0.0 || UV2.y < 0.0 || UV2.x > 1.0 || UV2.y > 1.0)
+			ProjectionColor = vec3(0.0, 0.0, 0.0);		
+	}
+
+	gl_FragColor.rgb = MaterialAmbientColor+
+	MaterialDiffuseColor *LightColor//*LightPower*cosTheta/(distance*distance)
+	*LightColor//*LightPower*cosTheta2/(distance2*distance2)
+	*ProjectionColor;//*ProjectorPower*cosTheta3/ (distance3*distance3);
+
+	//+MaterialSpecularColor * ProjectionColor* LightColor * LightPower * pow(cosAlpha,10) / (distance*distance);
+}

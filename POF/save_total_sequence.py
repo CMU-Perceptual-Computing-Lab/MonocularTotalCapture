@@ -458,7 +458,7 @@ for i, frame_index in enumerate(frame_indices):
 
     # all limbs plus neck -> nose, neck -> headtop, 3 connections with chest, (additional 6 connection), left hand, right hand (14 + 3 + 6 + 20 + 20)
     PAF_vec = np.concatenate((vec3ds[:13, :], vec3ds[-4:, :], np.zeros([6, 3]), lvec3ds, rvec3ds), axis=0)
-    with open(os.path.join(args.path, 'net_output', '{:012d}.txt'.format(i)), 'w') as f:
+    with open(os.path.join(args.path, 'net_output', '{:012d}.txt'.format(frame_index)), 'w') as f:
         f.write('2D keypoints:\n')
         for kp in total_keypoints_2d:
             f.write('{} {}\n'.format(kp[0], kp[1]))
@@ -543,17 +543,17 @@ for i, frame_index in enumerate(frame_indices):
         M = np.array([[k, 0., tx], [0., k, ty]], dtype=np.float32)
         resized_PAF_xy = cv2.warpAffine(bPAF_xy, M, (1920, 1080))[:args.height, :args.width, :]
         resized_PAF_z = cv2.warpAffine(bPAF_z, M, (1920, 1080))[:args.height, :args.width, :]
-        assert cv2.imwrite(os.path.join(args.path, 'paf_xy_body', '{:04d}.png'.format(i)), 255 - resized_PAF_xy[:, :, ::-1])
-        assert cv2.imwrite(os.path.join(args.path, 'paf_z_body', '{:04d}.png'.format(i)), 255 - resized_PAF_z[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'paf_xy_body', '{:04d}.png'.format(frame_index)), 255 - resized_PAF_xy[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'paf_z_body', '{:04d}.png'.format(frame_index)), 255 - resized_PAF_z[:, :, ::-1])
 
         utils.general.plot2d_cv2(limage_crop_v, lhand2d_pred_v, type_str='hand', s=5, use_color=True)
         lPAF_xy, lPAF_z = utils.PAF.plot_all_PAF(val_dict['lPAF'], 3)
-        assert cv2.imwrite(os.path.join(args.path, 'lhand_2d', '{:04d}.png'.format(i)), limage_crop_v[:, :, ::-1])
-        assert cv2.imwrite(os.path.join(args.path, 'paf_xy_lhand', '{:04d}.png'.format(i)), 255 - lPAF_xy[:, :, ::-1])
-        assert cv2.imwrite(os.path.join(args.path, 'paf_z_lhand', '{:04d}.png'.format(i)), 255 - lPAF_z[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'lhand_2d', '{:04d}.png'.format(frame_index)), limage_crop_v[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'paf_xy_lhand', '{:04d}.png'.format(frame_index)), 255 - lPAF_xy[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'paf_z_lhand', '{:04d}.png'.format(frame_index)), 255 - lPAF_z[:, :, ::-1])
 
         utils.general.plot2d_cv2(rimage_crop_v, rhand2d_pred_v, type_str='hand', s=5, use_color=True)
         rPAF_xy, rPAF_z = utils.PAF.plot_all_PAF(val_dict['rPAF'], 3)
-        assert cv2.imwrite(os.path.join(args.path, 'rhand_2d', '{:04d}.png'.format(i)), rimage_crop_v[:, :, ::-1])
-        assert cv2.imwrite(os.path.join(args.path, 'paf_xy_rhand', '{:04d}.png'.format(i)), 255 - rPAF_xy[:, :, ::-1])
-        assert cv2.imwrite(os.path.join(args.path, 'paf_z_rhand', '{:04d}.png'.format(i)), 255 - rPAF_z[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'rhand_2d', '{:04d}.png'.format(frame_index)), rimage_crop_v[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'paf_xy_rhand', '{:04d}.png'.format(frame_index)), 255 - rPAF_xy[:, :, ::-1])
+        assert cv2.imwrite(os.path.join(args.path, 'paf_z_rhand', '{:04d}.png'.format(frame_index)), 255 - rPAF_z[:, :, ::-1])

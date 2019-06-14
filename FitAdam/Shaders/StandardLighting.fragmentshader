@@ -1,0 +1,58 @@
+#version 120
+
+
+
+// Interpolated values from the vertex shaders
+varying vec3 Position_worldspace;
+varying vec3 Normal_cameraspace;
+varying vec3 EyeDirection_cameraspace;
+varying vec3 LightDirection_cameraspace1;
+varying vec3 LightDirection_cameraspace2;
+varying vec3 vColor;
+
+// Values that stay constant for the whole mesh.
+uniform mat4 MV;
+uniform vec3 LightPosition_worldspace1;
+uniform vec3 LightPosition_worldspace2;
+uniform float LightPower1;
+uniform float LightPower2;
+
+void main(){
+
+	// Light emission properties
+	// You probably want to put them as uniforms
+	vec3 LightColor = vec3(1,1,1);
+	
+	// Material properties
+	vec3 MaterialDiffuseColor = vColor;
+	vec3 MaterialAmbientColor = vec3(0.4,0.4,0.4) * MaterialDiffuseColor;
+	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
+
+	//Light 1
+	float distance = length( LightPosition_worldspace1 - Position_worldspace );
+
+	vec3 n = normalize( Normal_cameraspace );
+	vec3 l = normalize( LightDirection_cameraspace1 );
+	float cosTheta = clamp( dot( n,l ), 0,1 );
+	
+	vec3 E = normalize(EyeDirection_cameraspace);
+	vec3 R = reflect(-l,n);
+	float cosAlpha = clamp( dot( E,R ), 0,1 );
+	
+	gl_FragColor.rgb = MaterialAmbientColor +	MaterialDiffuseColor * LightColor * LightPower1 * cosTheta / (distance*distance) +
+		MaterialSpecularColor * LightColor * LightPower1 * pow(cosAlpha,2) / (distance*distance);
+
+    //Light 2
+	distance = length( LightPosition_worldspace2 - Position_worldspace );
+
+	n = normalize( Normal_cameraspace );
+	l = normalize( LightDirection_cameraspace2 );
+	cosTheta = abs(dot(n,l));//clamp( dot( n,l ), 0,1 );
+	
+	E = normalize(EyeDirection_cameraspace);
+	R = reflect(-l,n);
+	cosAlpha = abs(dot(E,R));//clamp( dot( E,R ), 0,1 );
+	
+	gl_FragColor.rgb += MaterialAmbientColor +	MaterialDiffuseColor * LightColor * LightPower2 * cosTheta / (distance*distance) +
+		MaterialSpecularColor * LightColor * LightPower2 * pow(cosAlpha,2) / (distance*distance);
+}

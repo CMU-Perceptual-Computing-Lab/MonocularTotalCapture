@@ -1,0 +1,9 @@
+#version 330
+
+in vec3 coord2D_mid;
+layout (location = 0) out vec4 coord2D_out;
+
+void main()
+{
+	coord2D_out = vec4(coord2D_mid, 1.0f);
+}

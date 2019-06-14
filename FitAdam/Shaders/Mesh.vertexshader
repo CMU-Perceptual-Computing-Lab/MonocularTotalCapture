@@ -1,0 +1,27 @@
+#version 330
+
+in vec3 vertex_pos;
+in vec3 vertex_normal;
+in vec3 vertex_color;
+in float vertex_alpha;
+
+out vec3 normal;
+out vec3 objectColor;
+out vec3 vpos;
+out float objectAlpha;
+
+uniform mat4 MVP;
+uniform mat4 MV;
+
+void main()
+{
+	vec4 normal4 = MV*vec4(vertex_normal,0);
+	normal = vec3(normal4);
+	objectColor = vertex_color;
+	//objectColor = objectColor*0.8
+	//objectColor = vec3(0.8,0.8,0.8);
+	//color = vertex_normal;
+	gl_Position =  MVP * vec4(vertex_pos,1);	
+	objectAlpha = vertex_alpha;
+	vpos = vec3(MV * vec4(vertex_pos,1));
+} 
