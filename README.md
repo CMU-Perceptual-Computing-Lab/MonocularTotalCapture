@@ -41,4 +41,23 @@ or
 bash run_pipeline.sh example_speech -f
 ```
 
+# Citation
+If you use this code in your research, please cite the following papers.
+```
+@inproceedings{xiang2019monocular,
+  title={Monocular total capture: Posing face, body, and hands in the wild},
+  author={Xiang, Donglai and Joo, Hanbyul and Sheikh, Yaser},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2019}
+}
+
+@inproceedings{joo2018total,
+  title={Total capture: A 3d deformation model for tracking faces, hands, and bodies},
+  author={Joo, Hanbyul and Simon, Tomas and Sheikh, Yaser},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2018}
+}
+```
+
+
 Note: Facial expression of Adam model is unavailable to copyright issue.
