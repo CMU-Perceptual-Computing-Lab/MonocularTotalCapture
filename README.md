@@ -1,6 +1,8 @@
 # Monocular Total Capture
 Code for CVPR19 paper "Monocular Total Capture: Posing Face, Body and Hands in the Wild"
 
+![Teaser Image](https://xiangdonglai.github.io/MTC_teaser.jpg)
+
 Project website: [<http://domedb.perception.cs.cmu.edu/mtc.html>]
 
 # Dependencies
