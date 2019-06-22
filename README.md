@@ -43,8 +43,8 @@ or
 bash run_pipeline.sh example_speech -f
 ```
 
-# Citation
-If you use this code in your research, please cite the following papers.
+# License and Citation
+This code can only be used for **non-commercial research purposes**. If you use this code in your research, please cite the following papers.
 ```
 @inproceedings{xiang2019monocular,
   title={Monocular total capture: Posing face, body, and hands in the wild},
@@ -61,9 +61,11 @@ If you use this code in your research, please cite the following papers.
 }
 ```
 
+Some part of this code is modified from [lmb-freiburg/hand3d](https://github.com/lmb-freiburg/hand3d).
+
 # Adam Model
 We use the deformable human model [**Adam**](http://www.cs.cmu.edu/~hanbyulj/totalcapture/) in this code.
 
 **The relationship between Adam and SMPL:** The body part of Adam is derived from [SMPL](http://smpl.is.tue.mpg.de/license_body) model. It follows SMPL's body joint hierarchy, but uses a different joint regressor. Adam does not contain the original SMPL model's shape and pose blendshapes, but uses its own version trained from Panoptic Studio database.
 
-Facial expression of Adam model is unavailable due to copyright issue.
+Facial expression of Adam model is unavailable due to copyright issues.
