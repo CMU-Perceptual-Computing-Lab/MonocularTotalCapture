@@ -30,7 +30,7 @@ This code is tested on a Ubuntu 16.04 machine with a GTX 1080Ti GPU, with the fo
 
 # Usage
 1. Suppose the video to be tested is named "${seqName}.mp4". Place it in "${ROOT}/${seqName}/${seqName}.mp4".
-2. If the camera intrinsics is known, put it in "${ROOT}/${seqName}/calib.json" (refer to "POF/calib.json" for example).
+2. If the camera intrinsics is known, put it in "${ROOT}/${seqName}/calib.json" (refer to "POF/calib.json" for example); otherwise, a default camera intrinsics will be used.
 3. In ${ROOT}, run "bash run_pipeline.sh ${seqName}"; if the subject in the video shows only upper body, run "bash run_pipeline.sh ${seqName} -f".
 
 # Examples
@@ -61,5 +61,9 @@ If you use this code in your research, please cite the following papers.
 }
 ```
 
+# Adam Model
+We use the deformable human model [**Adam**](http://www.cs.cmu.edu/~hanbyulj/totalcapture/) in this code.
 
-Note: Facial expression of Adam model is unavailable to copyright issue.
+**The relationship between Adam and SMPL:** The body part of Adam is derived from [SMPL](http://smpl.is.tue.mpg.de/license_body) model. It follows SMPL's body joint hierarchy, but uses a different joint regressor. Adam does not contain the original SMPL model's shape and pose blendshapes, but uses its own version trained from Panoptic Studio database.
+
+Facial expression of Adam model is unavailable due to copyright issue.
