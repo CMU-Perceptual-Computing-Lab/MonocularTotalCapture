@@ -66,6 +66,8 @@ Some part of this code is modified from [lmb-freiburg/hand3d](https://github.com
 # Adam Model
 We use the deformable human model [**Adam**](http://www.cs.cmu.edu/~hanbyulj/totalcapture/) in this code.
 
-**The relationship between Adam and SMPL:** The body part of Adam is derived from [SMPL](http://smpl.is.tue.mpg.de/license_body) model. It follows SMPL's body joint hierarchy, but uses a different joint regressor. Adam does not contain the original SMPL model's shape and pose blendshapes, but uses its own version trained from Panoptic Studio database.
+**The relationship between Adam and SMPL:** The body part of Adam is derived from [SMPL](http://smpl.is.tue.mpg.de/license_body) model by Loper et al. 2015. It follows SMPL's body joint hierarchy, but uses a different joint regressor. Adam does not contain the original SMPL model's shape and pose blendshapes, but uses its own version trained from Panoptic Studio database.
 
-Facial expression of Adam model is unavailable due to copyright issues.
+**The relationship between Adam and FaceWarehouse:** The face part of Adam is derived from [FaceWarehouse](http://kunzhou.net/zjugaps/facewarehouse/). In particular, the mesh topology of face of Adam is a modified version of the learned model from FaceWarehouse dataset. Adam does not contain the blendshapes of the original FaceWarehouse data, and facial expression of Adam model is unavailable due to copyright issues.
+
+The Adam model is shared for research purpose only, and cannot be used for commercial purpose. Redistributing the original or modified version of Adam is also not allowed without permissions. 
