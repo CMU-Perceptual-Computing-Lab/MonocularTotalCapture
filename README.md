@@ -71,3 +71,6 @@ We use the deformable human model [**Adam**](http://www.cs.cmu.edu/~hanbyulj/tot
 **The relationship between Adam and FaceWarehouse:** The face part of Adam is derived from [FaceWarehouse](http://kunzhou.net/zjugaps/facewarehouse/). In particular, the mesh topology of face of Adam is a modified version of the learned model from FaceWarehouse dataset. Adam does not contain the blendshapes of the original FaceWarehouse data, and facial expression of Adam model is unavailable due to copyright issues.
 
 The Adam model is shared for research purpose only, and cannot be used for commercial purpose. Redistributing the original or modified version of Adam is also not allowed without permissions. 
+
+# Special Notice
+1. In our code, the output of ceres::AngleAxisToRotationMatrix is always a RowMajor matrix, while the function is designed for a ColMajor matrix. To account for this, please treat our output pose parameters as the opposite value. In other words, before exporting our pose parameter to other softwares, please multiply them by -1.
