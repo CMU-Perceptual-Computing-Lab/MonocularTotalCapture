@@ -8,9 +8,9 @@ Project website: [<http://domedb.perception.cs.cmu.edu/mtc.html>]
 # Dependencies
 This code is tested on a Ubuntu 16.04 machine with a GTX 1080Ti GPU, with the following dependencies.
 1. ffmpeg
-2. Python 3.5 (with TensorFlow 1.5.0, OpenCV, Matplotlib)
+2. Python 3.5 (with TensorFlow 1.5.0, OpenCV, Matplotlib, packages installed with pip3)
 3. cmake >= 2.8
-4. OpenCV 2.4.13 (compiled with CUDA)
+4. OpenCV 2.4.13 (compiled from source with CUDA 9.0, CUDNN 7.0)
 5. Ceres-Solver 1.13.0 (with SuiteSparse)
 6. OpenGL, GLUT, GLEW
 7. libigl <https://github.com/libigl/libigl>
