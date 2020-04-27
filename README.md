@@ -33,6 +33,23 @@ This code is tested on a Ubuntu 16.04 machine with a GTX 1080Ti GPU, with the fo
 2. If the camera intrinsics is known, put it in "${ROOT}/${seqName}/calib.json" (refer to "POF/calib.json" for example); otherwise, a default camera intrinsics will be used.
 3. In ${ROOT}, run "bash run_pipeline.sh ${seqName}"; if the subject in the video shows only upper body, run "bash run_pipeline.sh ${seqName} -f".
 
+# Docker Image
+1. Install NVIDIA Docker
+2. Build the docker image
+```
+  docker build . --tag mtc
+```
+3. Running the docker image:
+```
+  xhost local:root
+  docker run --gpus 0 -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e XAUTHORITY -e NVIDIA_DRIVER_CAPABILITIES=all mtc
+```
+4. Once inside (should be in /opt/mtc by default):
+```
+  bash run_pipeline.sh example_speech -f
+```
+Tested on Ubuntu 16.04 and 18.04 with Titan Xp and Titan X Maxwell (External w/Razer Core). 
+
 # Examples
 "download.sh" automatically download 2 example videos to test. After successful installation run
 ```
