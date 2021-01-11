@@ -132,6 +132,7 @@ public:
 	std::vector<double> m_meshVerticesAlpha;
 	std::vector<unsigned int> m_meshIndices;
 	std::vector< std::pair<cv::Point3f, cv::Point3f> > m_meshJoints;		//point, color
+	size_t m_floorDataSize;
 
 	// std::vector<CSkeletonVisUnit> m_skeletonVisVector;
 	// std::vector<CSkeletonVisUnit> m_skeletonVisVectorCompare;
@@ -228,7 +229,7 @@ public:
 struct VisualizationOptions
 {
 	VisualizationOptions(): K(NULL), xrot(0.0f), yrot(0.0f), view_dist(300.0f), nRange(40.0f), CameraMode(0u), show_joint(true), show_mesh(true),
-		ortho_scale(1.0f), width(600), height(600), zmin(0.01f), zmax(1000.0f), meshSolid(false) {}
+		ortho_scale(1.0f), width(600), height(600), zmin(0.01f), zmax(1000.0f), meshSolid(false), show_shadows(true) {}
 	double* K;
 	GLfloat	xrot, yrot;
 	GLfloat view_dist, nRange;
@@ -239,6 +240,7 @@ struct VisualizationOptions
 	bool meshSolid;
 	bool show_joint;
 	bool show_mesh;
+	bool show_shadows;
 };
 
 #endif

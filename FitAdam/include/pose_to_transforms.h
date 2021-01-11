@@ -225,22 +225,32 @@ struct PoseToTransformsNoLR_Eulers_adamModel {
 
 		ceres::AngleAxisToRotationMatrix(pose, R.data());
 		Ms.setZero();
-		Ms.block(0, 0, 3, 3) = R;
+		Ms.block(0, 0, 3, 3) = R; //.transpose(); // TODO change this
 		Ms(0, 3) = J(0, 0);
 		Ms(1, 3) = J(0, 1);
 		Ms(2, 3) = J(0, 2);
 		Ms(3, 3) = T(1.0);
 
+		// std::cout << "Transform: \n";
+		// std::cout << "(" << R.data()[0] << ", " << R.data()[1] << ", " << R.data()[2] << ")\n";
+		// std::cout << "(" << R.data()[3] << ", " << R.data()[4] << ", " << R.data()[5] << ")\n";
+		// std::cout << "(" << R.data()[6] << ", " << R.data()[7] << ", " << R.data()[8] << ")\n";
+
 		for (int idj = 1; idj < mod_.NUM_JOINTS; idj++)
 		{
 			int ipar = mod_.m_parent[idj];
-			//std::cout << idj << " " << ipar << "\n\n";
+			// if (idj == 1)
+			// 	std::cout << idj << " " << ipar << "\n\n";
 			// ceres::AngleAxisToRotationMatrix(pose + idj * 3, R.data());
 
 			T angles[3];
 			angles[0] = pose[idj * 3];
 			angles[1] = pose[idj * 3 + 1];
 			angles[2] = pose[idj * 3 + 2];
+
+			// if (idj == 1) {
+			// 	std::cout << "Pose: (" << angles[0] << ", " << angles[1] << ", " << angles[2] << ")\n";
+			// }
 
 			//Freezing joints here  //////////////////////////////////////////////////////
 			if (idj == 10 || idj == 11)	//foot ends
@@ -273,9 +283,16 @@ struct PoseToTransformsNoLR_Eulers_adamModel {
 			else
 			{
 				ceres::AngleAxisToRotationMatrix(angles, R.data());
+
+				// if (idj == 1) {
+				// 	std::cout << "Transform: \n";
+				// 	std::cout << "(" << R.data()[0] << ", " << R.data()[1] << ", " << R.data()[2] << ")\n";
+				// 	std::cout << "(" << R.data()[3] << ", " << R.data()[4] << ", " << R.data()[5] << ")\n";
+				// 	std::cout << "(" << R.data()[6] << ", " << R.data()[7] << ", " << R.data()[8] << ")\n";
+				// }
 			}
 
-			Ms.block(idj * 4, 0, 3, 3) = Ms.block(ipar * 4, 0, 3, 3)*R;
+			Ms.block(idj * 4, 0, 3, 3) = Ms.block(ipar * 4, 0, 3, 3)*R; //.transpose(); // TODO change this back
 			Ms.block(idj * 4, 3, 3, 1) = Ms.block(ipar * 4, 3, 3, 1) +
 										Ms.block(ipar * 4, 0, 3, 3)*(J.row(idj).transpose() - J.row(ipar).transpose());
 			Ms(idj * 4 + 3, 3) = T(1.0);
@@ -286,6 +303,10 @@ struct PoseToTransformsNoLR_Eulers_adamModel {
 		for (int idj = 0; idj < mod_.NUM_JOINTS; idj++) {
 			outT.block(idj * 3, 0, 3, 4) = Ms.block(idj * 4, 0, 3, 4);
 			outJoint.row(idj) = (Ms.block(idj * 4, 0, 3, 3) * J.row(idj).transpose() + Ms.block(idj * 4, 3, 3, 1)).transpose();
+			// if (idj == 3 || idj == 6 || idj == 9) {
+			// 	std::cout << "idj " << idj << std::endl;
+			// 	std::cout << outJoint.row(idj) << std::endl;
+			// }
 		}
 		return true;
 	}

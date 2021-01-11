@@ -101,6 +101,7 @@ int main(int argc, char* argv[])
     render.reset(new Renderer(&argc, argv));  // initialize the OpenGL renderer
     render->options.meshSolid = true;
     render->options.show_joint = false;
+    render->options.zmax = 2000.0f;
     Renderer::use_color_fbo = true;
 
     /*

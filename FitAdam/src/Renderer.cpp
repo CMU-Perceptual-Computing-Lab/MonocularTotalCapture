@@ -3,6 +3,8 @@
 #include <GL/glut.h>    
 #include <GL/freeglut.h>    
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -17,16 +19,21 @@
 // #define OPENGL_DEBUG
 
 const std::string Renderer::SHADER_ROOT = "./Shaders/";
-GLuint Renderer::g_shaderProgramID[8];
+GLuint Renderer::g_shaderProgramID[10];
 
 int Renderer::g_drawMode = 0;
 GLuint Renderer::g_vao = 0;     //Vertex Array: only need one, before starting opengl window
+GLuint Renderer::g_groundVAO = 0;
+GLuint Renderer::g_groundVBO = 0;
+
 GLuint Renderer::g_vertexBuffer, Renderer::g_uvBuffer, Renderer::g_normalBuffer, Renderer::g_indexBuffer;   //Vertex Buffer. 
 GLuint Renderer::g_fbo_color, Renderer::g_fbo_depth, Renderer::g_fbo_rgbfloat;        //frame buffer object
+GLuint Renderer::g_shadowFBO, Renderer::g_shadowTexture; // shadow map buffer and texture
 GLuint Renderer::g_colorTexture, Renderer::g_depthTexture, Renderer::g_rgbfloatTexture, Renderer::g_imageTexture;
 GLuint Renderer::g_depth_renderbuffer;
 int Renderer::g_depthRenderViewPortW=640, Renderer::g_depthRenderViewPortH=480;
 int Renderer::g_colorTextureBufferWidth=1920, Renderer::g_colorTextureBufferHeight=1080;
+int Renderer::SHADOW_WIDTH = 2048, Renderer::SHADOW_HEIGHT = 2048;
 bool Renderer::use_color_fbo = false;
 
 GLint Renderer::window_id;
@@ -79,8 +86,10 @@ void Renderer::InitGraphics()
     this->SetShader("Selection", g_shaderProgramID[MODE_DRAW_SELECTION_PTCLOUD]);
     this->SetShader("NormalMap", g_shaderProgramID[MODE_DRAW_NORMALMAP]);
     this->SetShader("Mesh", g_shaderProgramID[MODE_DRAW_MESH]);
+    this->SetShader("Floor", g_shaderProgramID[MODE_DRAW_FLOOR]);
     this->SetShader("Mesh_texture_shader", g_shaderProgramID[MODE_DRAW_MESH_TEXTURE]);
     this->SetShader("Project2D", g_shaderProgramID[MODE_DRAW_PROJECTION]);
+    this->SetShader("ShadowMap", g_shaderProgramID[MODE_DRAW_SHADOW]);
 
 #ifdef OPENGL_DEBUG
     // During init, enable debug output
@@ -114,11 +123,14 @@ void Renderer::InitGraphics()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glFramebufferTexture(GL_FRAMEBUFFER,
                          GL_COLOR_ATTACHMENT0,
-                         g_colorTexture, 0);
+                        g_colorTexture, 0);
     glGenRenderbuffers(1, &g_depth_renderbuffer);   // a depth buffer is needed for FBO rendering
     glBindRenderbuffer(GL_RENDERBUFFER, g_depth_renderbuffer);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1920, 1080);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g_depth_renderbuffer);
+    if (GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT == glCheckFramebufferStatus(GL_FRAMEBUFFER)) { printf("UNATTACHED"); }
+    if (GL_FRAMEBUFFER_UNDEFINED == glCheckFramebufferStatus(GL_FRAMEBUFFER)) { printf("UNDEFINED"); }
+    if (GL_FRAMEBUFFER_UNSUPPORTED == glCheckFramebufferStatus(GL_FRAMEBUFFER)) { printf("UNSUPPORTED"); }
     if(GL_FRAMEBUFFER_COMPLETE != glCheckFramebufferStatus(GL_FRAMEBUFFER))
     {
         printf("Failed in color framebuffer setting\n");
@@ -145,6 +157,23 @@ void Renderer::InitGraphics()
         printf("Failed in depth framebuffer setting\n");
         return;
     }
+
+    // Another depth buffer for shadow mapping
+    glGenFramebuffers(1, &g_shadowFBO);
+    // create depth texture
+    glGenTextures(1, &g_shadowTexture);
+    glBindTexture(GL_TEXTURE_2D, g_shadowTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // attach depth texture as FBO's depth buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, g_shadowFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, g_shadowTexture, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     //Create rgb float frame buffer
     glGenFramebuffers(1, &g_fbo_rgbfloat);
@@ -575,27 +604,6 @@ void Renderer::SpecialKeys(const int key, const int x, const int y)
 
 void Renderer::MeshRender()
 {
-    if (use_color_fbo)
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_color);
-        glViewport(0, 0, options.width, options.height);
-        GLenum FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        // GLfloat white[3] = {1., 1., 1.};
-        // glClearBufferfv(GL_COLOR, 0, white);
-        if (GL_FRAMEBUFFER_COMPLETE != FBOstatus)
-        {
-            std::cout << "FrameBuffer Fails." << std::endl;
-            exit(0);
-        }
-        static const GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, draw_buffers);
-    }
-    else
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, options.width, options.height);
-    }
-
     glClearColor(1., 1., 1., 0.);
     // mesh renderer
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -625,6 +633,59 @@ void Renderer::MeshRender()
         glRotatef(options.yrot, 0.0, 1.0, 0.0);
         glTranslatef(0, 0, -options.view_dist);
     }
+
+    // render depth map of mesh from light's perspective for shadow mapping
+    // we will only show shadows on floor, not on body mesh.
+    // Do this before using the color FBO
+    glm::mat4 lightMVP;
+    glm::vec3 lightPos(-100.0f, -300.0f, options.view_dist);
+    if (options.xrot != 0.0f) {
+        // special case if we're viewing from top or bottom
+        lightPos = glm::vec3(-25.0f, -25.0f, 0.0f);
+    }
+    if (pData->bRenderFloor) {
+        glm::mat4 lightP, lightMV;
+        float near_plane = options.zmin, far_plane = options.zmax;
+        lightP = glm::ortho(-1024/2.0f, 1024/2.0f, (float)-1024, (float)1024, (float)near_plane, (float)far_plane);
+        lightMV = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, options.view_dist), glm::vec3(0.0, -1.0, 0.0)); 
+        lightMVP = lightP * lightMV;
+
+        glUseProgram(g_shaderProgramID[MODE_DRAW_SHADOW]);
+        GLuint MVP_id = glGetUniformLocation(g_shaderProgramID[MODE_DRAW_SHADOW], "lightMVP");
+        glUniformMatrix4fv(MVP_id, 1, GL_FALSE, &lightMVP[0][0]);
+
+        glm::mat4 mvMat;
+        glGetFloatv(GL_MODELVIEW_MATRIX, &mvMat[0][0]);
+
+        glUseProgram(g_shaderProgramID[MODE_DRAW_SHADOW]);
+        GLuint objMV_id = glGetUniformLocation(g_shaderProgramID[MODE_DRAW_SHADOW], "objMV");
+        glUniformMatrix4fv(objMV_id, 1, GL_FALSE, &mvMat[0][0]);
+
+        DrawShadowMap();
+    }
+
+    if (use_color_fbo)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, g_fbo_color);
+        glViewport(0, 0, options.width, options.height);
+        GLenum FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        // GLfloat white[3] = {1., 1., 1.};
+        // glClearBufferfv(GL_COLOR, 0, white);
+        if (GL_FRAMEBUFFER_COMPLETE != FBOstatus)
+        {
+            std::cout << "FrameBuffer Fails." << std::endl;
+            exit(0);
+        }
+        static const GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, draw_buffers);
+    }
+    else
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, options.width, options.height);
+    }
+
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     if (options.CameraMode == 0u)
     {
@@ -719,6 +780,7 @@ void Renderer::MeshRender()
     if (options.show_mesh)
     {
         glEnable(GL_TEXTURE_2D);
+
         // MVP
         glm::mat4 mvMat,pMat,mvpMat;
         glGetFloatv(GL_MODELVIEW_MATRIX, &mvMat[0][0]);
@@ -839,7 +901,88 @@ void Renderer::MeshRender()
 
     if (pData->bRenderFloor)  // draw the floor
     {
-        glDisable(GL_LIGHTING);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(0.0f, 0.0f, options.view_dist);
+        glRotatef(options.xrot, 1.0, 0.0, 0.0);
+        glRotatef(options.yrot, 0.0, 1.0, 0.0);
+
+        glEnable(GL_TEXTURE_2D);
+        // MVP
+        glm::mat4 mvMat,pMat,mvpMat;
+        // mvMat = glm::mat4(1.0f);
+        glGetFloatv(GL_MODELVIEW_MATRIX, &mvMat[0][0]);
+        glGetFloatv(GL_PROJECTION_MATRIX, &pMat[0][0]);
+        mvpMat = pMat * mvMat;
+
+        glUseProgram(g_shaderProgramID[MODE_DRAW_FLOOR]);
+        GLuint MVP_id = glGetUniformLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "MVP");
+        glUniformMatrix4fv(MVP_id, 1, GL_FALSE, &mvpMat[0][0]);
+
+        GLuint MV_id = glGetUniformLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "MV");
+        glUniformMatrix4fv(MV_id, 1, GL_FALSE, &mvMat[0][0]);
+
+        GLuint lightMVP_id = glGetUniformLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "lightMVP");
+        glUniformMatrix4fv(lightMVP_id, 1, GL_FALSE, &lightMVP[0][0]);
+
+        GLuint lightPos_id = glGetUniformLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "lightPos");
+        glUniform3fv(lightPos_id, 1, &lightPos[0]);
+
+        // mesh part
+        glUseProgram(g_shaderProgramID[MODE_DRAW_FLOOR]);
+        glLineWidth((GLfloat)0.5);
+
+        // use the shadow map
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, g_shadowTexture);
+
+        DrawFloor();
+
+        glDisable(GL_TEXTURE_2D);
+        glUseProgram(0);
+        glPopMatrix();
+
+        // glDisable(GL_LIGHTING);
+        // const int grid_num = 20;
+        // const int width = 100;
+
+        // Eigen::Vector3d normal(pData->ground_normal[0], pData->ground_normal[1], pData->ground_normal[2]);
+        // normal = normal / normal.norm();
+        // Eigen::Vector3d tangent1(normal[0], -normal[2], normal[1]), tangent2(normal[1], -normal[0], normal[2]);
+        // Eigen::Vector3d origin(pData->ground_center[0], pData->ground_center[1], pData->ground_center[2]);
+        // origin = origin - grid_num * width * (tangent1 + tangent2);
+        // for (auto y = 0; y < 2 * grid_num + 1; y++)
+        //     for (auto x = 0; x < 2 * grid_num + 1; x++)
+        //     {
+        //         if ((x + y) % 2 == 0)
+        //             glColor3f(1.0, 1.0, 1.0);
+        //         else
+        //             glColor3f(0.7, 0.7, 0.7);
+        //         Eigen::Vector3d P = origin + x * width * tangent1 + y * width * tangent2;
+        //         glBegin(GL_QUADS);
+        //         glVertex3f(P[0], P[1], P[2]);
+        //         P = P + width * tangent1;
+        //         glVertex3f(P[0], P[1], P[2]);
+        //         P = P + width * tangent2;
+        //         glVertex3f(P[0], P[1], P[2]);
+        //         P = P - width * tangent1;
+        //         glVertex3f(P[0], P[1], P[2]);
+        //         glEnd();
+        //     }
+        // glEnable(GL_LIGHTING);
+    }
+
+    glPopMatrix();
+    glutSwapBuffers();
+}
+
+void Renderer::DrawFloor() {
+    if (g_groundVAO == 0) {
+        // generate the floor data
+        std::vector<cv::Point3f> floorData; 
+
         const int grid_num = 20;
         const int width = 100;
 
@@ -848,29 +991,153 @@ void Renderer::MeshRender()
         Eigen::Vector3d tangent1(normal[0], -normal[2], normal[1]), tangent2(normal[1], -normal[0], normal[2]);
         Eigen::Vector3d origin(pData->ground_center[0], pData->ground_center[1], pData->ground_center[2]);
         origin = origin - grid_num * width * (tangent1 + tangent2);
-        for (auto y = 0; y < 2 * grid_num + 1; y++)
-            for (auto x = 0; x < 2 * grid_num + 1; x++)
-            {
-                if ((x + y) % 2 == 0)
-                    glColor3f(1.0, 1.0, 1.0);
-                else
-                    glColor3f(0.7, 0.7, 0.7);
+        for (auto y = 0; y < 2 * grid_num + 1; y++) {
+            for (auto x = 0; x < 2 * grid_num + 1; x++) {
                 Eigen::Vector3d P = origin + x * width * tangent1 + y * width * tangent2;
-                glBegin(GL_QUADS);
-                glVertex3f(P[0], P[1], P[2]);
+                cv::Point3f quad0(P[0], P[1], P[2]);
                 P = P + width * tangent1;
-                glVertex3f(P[0], P[1], P[2]);
+                cv::Point3f quad1(P[0], P[1], P[2]);
                 P = P + width * tangent2;
-                glVertex3f(P[0], P[1], P[2]);
+                cv::Point3f quad2(P[0], P[1], P[2]);
                 P = P - width * tangent1;
-                glVertex3f(P[0], P[1], P[2]);
-                glEnd();
+                cv::Point3f quad3(P[0], P[1], P[2]);
+
+                // all have same color and normal
+                cv::Point3f normal((float)pData->ground_normal[0], (float)pData->ground_normal[1], (float)pData->ground_normal[2]);
+                cv::Point3f color(0.7f, 0.7f, 0.7f);
+                if ((x + y) % 2 == 0) {
+                    color.x = 1.0f;
+                    color.y = 1.0f;
+                    color.z = 1.0f;
+                }
+
+                // first tri
+                floorData.push_back(quad0);
+                floorData.push_back(normal);
+                floorData.push_back(color);
+                floorData.push_back(quad2);
+                floorData.push_back(normal);
+                floorData.push_back(color);
+                floorData.push_back(quad1);
+                floorData.push_back(normal);
+                floorData.push_back(color);
+                // second tri
+                floorData.push_back(quad0);
+                floorData.push_back(normal);
+                floorData.push_back(color);
+                floorData.push_back(quad3);
+                floorData.push_back(normal);
+                floorData.push_back(color);
+                floorData.push_back(quad2);
+                floorData.push_back(normal);
+                floorData.push_back(color);
             }
-        glEnable(GL_LIGHTING);
+        }
+        pData->m_floorDataSize = floorData.size();
+
+        glGenVertexArrays(1, &g_groundVAO);
+        glGenBuffers(1, &g_groundVBO);
+        // fill buffer
+        glBindVertexArray(g_groundVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, g_groundVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cv::Point3f)*(floorData.size()), &(floorData[0]), GL_STATIC_DRAW);
+        // link vertex attributes
+        GLuint vertexPosition_id = glGetAttribLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "vertex_pos");
+        glVertexAttribPointer(vertexPosition_id,            // Attribute 0 or vertexPosition_id
+            3,            // size
+            GL_FLOAT,     // Type: Floating-point data
+            GL_FALSE,     // Not normalized
+                          // (floating-point data never is)
+            sizeof(cv::Point3f)*3,            // stride
+            0);        // Offset zero (NULL pointer)
+        glEnableVertexAttribArray(vertexPosition_id);
+
+        GLuint vertexNormal_id = glGetAttribLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "vertex_normal");
+        glVertexAttribPointer(vertexNormal_id,            // Attribute 1 or vertexColor_id
+            3,            // size
+            GL_FLOAT,     // Type: Floating-point data
+            GL_FALSE,     // Not normalized
+                            // (floating-point data never is)
+            sizeof(cv::Point3f)*3,            // stride
+            (void*)sizeof(cv::Point3f));
+        glEnableVertexAttribArray(vertexNormal_id);
+
+        GLuint vertexColor_id = glGetAttribLocation(g_shaderProgramID[MODE_DRAW_FLOOR], "vertex_color");
+        glVertexAttribPointer(vertexColor_id,            // Attribute 1 or vertexColor_id
+            3,            // size
+            GL_FLOAT,     // Type: Floating-point data
+            GL_FALSE,     // Not normalized
+                          // (floating-point data never is)
+            sizeof(cv::Point3f)*3,            // stride
+            (void*)(sizeof(cv::Point3f)*2));        // Offset in the buffer
+        glEnableVertexAttribArray(vertexColor_id);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
     }
 
-    glPopMatrix();
-    glutSwapBuffers();
+    glBindVertexArray(g_groundVAO);
+    glDrawArrays(GL_TRIANGLES,      // mode
+                0, // first
+                pData->m_floorDataSize / 3 // count
+            );
+    glBindVertexArray(0);
+}
+
+void Renderer::DrawShadowMap()
+{
+    g_drawMode = MODE_DRAW_SHADOW;
+    glUseProgram(g_shaderProgramID[g_drawMode]);
+
+    glBindVertexArray(g_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, g_vertexBuffer);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cv::Point3d) * pData->m_meshVertices.size(),  
+        &(pData->m_meshVertices[0]), GL_STATIC_DRAW);
+
+    GLuint vertexPosition_id = glGetAttribLocation(g_shaderProgramID[g_drawMode], "vertex_pos");
+    glVertexAttribPointer(vertexPosition_id,            // Attribute 0 or vertexPosition_id
+        3,            // size
+        GL_DOUBLE,     // Type: Floating-point data
+        GL_FALSE,     // Not normalized
+                      // (floating-point data never is)
+        0,            // stride
+        0);        // Offset zero (NULL pointer)
+    glEnableVertexAttribArray(vertexPosition_id);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindFramebuffer(GL_FRAMEBUFFER, g_shadowFBO);
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    GLenum FBOstatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (GL_FRAMEBUFFER_COMPLETE != FBOstatus)
+    {
+        std::cout << "FrameBuffer Fails." << std::endl;
+        exit(0);
+    }
+    float one = 1.0;
+    glClearBufferfv(GL_DEPTH, 0, &one);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDrawBuffer(GL_NONE);
+
+    if (pData->m_meshIndices.size() > 0)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_indexBuffer);       //Note "GL_ELEMENT_ARRAY_BUFFER" instead of GL_ARRAY_BUFFER
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->m_meshIndices.size() * sizeof(unsigned int), &(pData->m_meshIndices[0]), GL_STATIC_DRAW);  //allocate and copy together
+    }
+
+    if (options.meshSolid) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if (pData->m_meshIndices.size() > 0)
+    {
+        glDrawElements(         //Indexed
+            GL_TRIANGLES,      // mode
+            pData->m_meshIndices.size(),    // count
+            GL_UNSIGNED_INT,   // type
+            (void*)0           // element array buffer offset
+        );
+    }
+    else glDrawArrays(GL_POINTS, 0, pData->m_meshVertices.size());   //Non indexing version
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::DrawSkeleton(double* joint, uint vis_type, std::vector<int> connMat)
@@ -915,6 +1182,11 @@ void Renderer::DrawSkeleton(double* joint, uint vis_type, std::vector<int> connM
     {
         for (int i = start_idx; i < end_idx; i++)
         {
+            if (i == 0) {
+                glColor3ub(255u, 0u, 0u);
+            } else {
+                glColor3ub(50u, 50u, 50u);
+            }
             if (i < 21) rad = 2.0f;
             else rad = 1.0f;
             glPushMatrix();

@@ -8,7 +8,7 @@
 std::array<int, 63> map_adam_to_measure = {12, 15, 0, 16, 18, 20, 1, 4, 7, 17, 19, 21, 2, 5, 8, 15, 15, 15, 15, 15, 0,
 							 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
 							 21, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61};
-std::array<int, 21> map_cocoreg_to_measure = {12, 14, 12, 9, 10, 11, 3, 4, 5, 8, 7, 6, 2, 1, 0, 15, 17, 16, 18, 13, 19};
+std::array<int, 21> map_cocoreg_to_measure = {12, 14, 12, 9, 10, 11, 3, 4, 5, 8, 7, 6, 2, 1, 0, 15, 17, 16, 18, 13, 19}; // 12 is twice
 std::array<int, 21> map_h36m_to_measure = {12, 14, 12, 9, 10, 11, 3, 4, 5, 8, 7, 6, 2, 1, 0, 15, 17, 16, 18, 13, 12};
 
 							 
@@ -68,7 +68,7 @@ void GenerateMesh(CMeshModelInstance& returnMesh, double* resultJoint, smpl::SMP
 }
 
 
-void GenerateMesh(CMeshModelInstance& returnMesh, double* resultJoint, smpl::SMPLParams& targetParam, TotalModel& g_total_model, const int regressor_type, const bool euler)
+void GenerateMesh(CMeshModelInstance& returnMesh, double* resultJoint, smpl::SMPLParams& targetParam, TotalModel& g_total_model, const int regressor_type, const bool euler, const bool useLocal)
 {
 	Eigen::Matrix<double, Eigen::Dynamic, 1> outV(TotalModel::NUM_VERTICES * 3);
 	Eigen::VectorXd transforms;
@@ -81,7 +81,9 @@ void GenerateMesh(CMeshModelInstance& returnMesh, double* resultJoint, smpl::SMP
 		euler);
 	Eigen::SparseMatrix<double, Eigen::ColMajor> eye3(3, 3); eye3.setIdentity();
 	Eigen::SparseMatrix<double, Eigen::ColMajor> dVdt = Eigen::kroneckerProduct(Eigen::VectorXd::Ones(TotalModel::NUM_VERTICES), eye3);
-	outV += dVdt * targetParam.m_adam_t; //translation is applied at the end
+	if (!useLocal) {
+		outV += dVdt * targetParam.m_adam_t; //translation is applied at the end
+	}
 	returnMesh.m_meshType = CMeshModelInstance::MESH_TYPE_ADAM;
 	returnMesh.m_vertices.resize(TotalModel::NUM_VERTICES);
 	returnMesh.m_colors.resize(TotalModel::NUM_VERTICES);
